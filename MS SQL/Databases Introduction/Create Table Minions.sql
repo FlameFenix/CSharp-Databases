@@ -1,0 +1,5 @@
+CREATE TABLE Minions (
+Id INT PRIMARY KEY NOT NULL,
+Name NVARCHAR(100),
+Age INT,
+); 
