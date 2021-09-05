@@ -18,3 +18,9 @@ SELECT FirstName, LastName, JobTitle FROM Employees
 
 SELECT FirstName + ' ' + MiddleName  + ' ' + LastName AS FullName FROM Employees
 	WHERE Salary = 25000 OR Salary = 14000  OR Salary = 12500 OR Salary = 23600 -- TASK 10
+
+SELECT FirstName, LastName FROM Employees
+	WHERE ManagerID IS NULL -- TASK 11
+
+SELECT FirstName, LastName, Salary FROM Employees
+	WHERE Salary > 50000 ORDER BY Salary DESC -- TASK 12
