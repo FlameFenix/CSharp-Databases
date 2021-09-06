@@ -24,3 +24,12 @@ SELECT FirstName, LastName FROM Employees
 
 SELECT FirstName, LastName, Salary FROM Employees
 	WHERE Salary > 50000 ORDER BY Salary DESC -- TASK 12
+
+SELECT TOP 5 FirstName, LastName FROM Employees
+	ORDER BY Salary DESC -- TASK 13
+
+SELECT FirstName, LastName FROM Employees
+	WHERE DepartmentID != 4 -- TASK 14
+
+SELECT * FROM Employees
+	ORDER BY Salary DESC, FirstName ASC, LastName DESC, MiddleName ASC -- TASK 15
