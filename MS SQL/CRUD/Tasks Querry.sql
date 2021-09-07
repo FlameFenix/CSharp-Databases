@@ -33,3 +33,20 @@ SELECT FirstName, LastName FROM Employees
 
 SELECT * FROM Employees
 	ORDER BY Salary DESC, FirstName ASC, LastName DESC, MiddleName ASC -- TASK 15
+
+CREATE VIEW V_EmployeesSalaries AS
+SELECT FirstName, LastName, Salary FROM Employees -- TASK 16
+
+CREATE VIEW V_EmployeeNameJobTitle  AS
+SELECT FirstName + ' '  + IsNull(MiddleName, '')  + ' ' + LastName AS [Full Name], JobTitle FROM Employees -- TASK 17
+
+SELECT DISTINCT JobTitle FROM Employees -- TASK 18
+
+SELECT TOP 10 * FROM Projects
+ ORDER BY StartDate, [Name] -- TASK 19
+
+SELECT TOP 7 FirstName, LastName, HireDate FROM Employees
+	ORDER BY HireDate DESC -- TASK 20
+	
+
+
