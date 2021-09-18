@@ -6,7 +6,7 @@ SELECT FirstName, LastName, Salary FROM Employees -- TASK 4
 
 SELECT FirstName, MiddleName, LastName FROM Employees -- TASK 5
 
--- TASK 6
+SELECT [FirstName] + '.' + [LastName] + '@softuni.bg' FROM Employees -- TASK 6
 
 SELECT DISTINCT Salary FROM Employees -- TASK 7
 
