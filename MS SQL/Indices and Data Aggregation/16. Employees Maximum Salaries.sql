@@ -1,0 +1,3 @@
+SELECT e.DepartmentID, MAX(Salary) FROM Employees AS e
+GROUP BY e.DepartmentID
+HAVING MAX(Salary) NOT BETWEEN 30000 AND 70000
