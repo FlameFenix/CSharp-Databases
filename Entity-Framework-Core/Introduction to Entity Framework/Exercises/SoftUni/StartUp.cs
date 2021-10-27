@@ -3,7 +3,9 @@ using SoftUni.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace SoftUni
 {
@@ -17,7 +19,10 @@ namespace SoftUni
             // Console.WriteLine(GetEmployeesWithSalaryOver50000(context));
             // Console.WriteLine(GetEmployeesFromResearchAndDevelopment(context));
             // Console.WriteLine(AddNewAddressToEmployee(context));
-            Console.WriteLine(GetEmployeesInPeriod(context));
+            // Console.WriteLine(GetEmployeesInPeriod(context)); not finished !
+            // Console.WriteLine(GetAddressesByTown(context));
+            // Console.WriteLine(GetEmployee147(context));
+
         }
 
         /* 3. Employees Full Information */
@@ -156,5 +161,66 @@ namespace SoftUni
             return sb.ToString();
         }
 
+        /* 8. Address by town */
+
+        public static string GetAddressesByTown(SoftUniContext context)
+        {
+            var addressesByCount = context
+                .Addresses
+                .OrderByDescending(e => e.Employees.Count)
+                .ThenBy(t => t.Town.Name)
+                .ThenBy(a => a.AddressText)
+                .Select(e => new
+                {
+                    e.AddressText,
+                    e.Town.Name,
+                    e.Employees.Count
+                })
+                .Take(10)
+                .ToArray();
+
+            StringBuilder sb = new StringBuilder();
+
+            foreach (var town in addressesByCount)
+            {
+               sb.AppendLine($"{town.AddressText}, {town.Name} - {town.Count} employees");
+            }
+
+            return sb.ToString();
+        }
+
+        /* 9. Employee 147 */
+
+        public static string GetEmployee147(SoftUniContext context)
+        {
+            var employee = context
+                .Employees
+                .Where(x => x.EmployeeId == 147)
+                .Select(x => new
+                {
+                    x.FirstName,
+                    x.LastName,
+                    x.JobTitle,
+                    Projects = x.EmployeesProjects
+                        .Where(x => x.EmployeeId == 147)
+                        .Select(x => new
+                            {
+                                projectName = x.Project.Name
+                            })
+                        .OrderBy(x => x.projectName)
+                        .ToList()
+                }).FirstOrDefault();
+
+            StringBuilder sb = new StringBuilder();
+
+            sb.AppendLine($"{employee.FirstName} {employee.LastName} - {employee.JobTitle}");
+
+            foreach (var project in employee.Projects)
+            {
+                sb.AppendLine(project.projectName);
+            }
+
+            return sb.ToString();
+        }
     }
 }
