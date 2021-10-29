@@ -19,10 +19,10 @@ namespace SoftUni
             // Console.WriteLine(GetEmployeesWithSalaryOver50000(context));
             // Console.WriteLine(GetEmployeesFromResearchAndDevelopment(context));
             // Console.WriteLine(AddNewAddressToEmployee(context));
-            // Console.WriteLine(GetEmployeesInPeriod(context)); not finished !
+            // Console.WriteLine(GetEmployeesInPeriod(context));
             // Console.WriteLine(GetAddressesByTown(context));
             // Console.WriteLine(GetEmployee147(context));
-
+            // Console.WriteLine(GetDepartmentsWithMoreThan5Employees(context));
         }
 
         /* 3. Employees Full Information */
@@ -129,33 +129,37 @@ namespace SoftUni
 
         public static string GetEmployeesInPeriod(SoftUniContext context)
         {
-            var employessFromDb = context.Employees.ToArray();
-
-            List<Employee> employees = new List<Employee>();
-
-            var projects = context.EmployeesProjects.Where(x => x.Project.StartDate >= new DateTime(2001, 1, 1) && x.Project.StartDate <= new DateTime(2003, 12, 31)).Take(10).ToArray();
-
-            var allProjects = context.Projects.ToArray();
+            var employeesProjects = context
+                .EmployeesProjects
+                .Where(x => x.Project.StartDate >= new DateTime(2001, 1, 1) &&
+                            x.Project.StartDate <= new DateTime(2003, 12, 31))
+                .Select(x => new
+                {
+                    x.Employee,
+                    x.Employee.Manager,
+                    Projects = x.Employee.EmployeesProjects.Select(x => new
+                    {
+                        x.Project
+                    })
+                }).ToArray();
 
             StringBuilder sb = new StringBuilder();
 
-            foreach (var e in projects)
-            {
-                Employee currentEmployee = employessFromDb.FirstOrDefault(x => x.EmployeeId == e.EmployeeId);
-                if (!employees.Contains((currentEmployee)))
-                {
-                    employees.Add(currentEmployee);
-                }
-            }
+            List<string> names = new List<string>();
 
-            foreach (var item in employees)
+            foreach (var employee in employeesProjects)
             {
-                sb.AppendLine($"{item.FirstName} {item.LastName}");
-
-                foreach (var project in item.EmployeesProjects)
+                if (names.Contains($"{employee.Employee.FirstName} {employee.Employee.LastName}"))
                 {
-                    sb.AppendLine($"Project: {project.Project.Name} - {project.Project.StartDate.ToString("M/d/yyyy h:mm:ss tt")} - {project.Project.EndDate}");
+                    continue;
                 }
+
+                sb.AppendLine($"{employee.Employee.FirstName} {employee.Employee.LastName} - Manager: {employee.Employee.Manager.FirstName} {employee.Employee.Manager.LastName}");
+                foreach (var project in employee.Projects)
+                {
+                    sb.AppendLine($"--{project.Project.Name} - {project.Project.StartDate} - {(project.Project.EndDate == null ? "not finished" : $"{project.Project.EndDate}")}");
+                }
+                names.Add($"{employee.Employee.FirstName} {employee.Employee.LastName}");
             }
 
             return sb.ToString();
@@ -222,5 +226,38 @@ namespace SoftUni
 
             return sb.ToString();
         }
+
+        /* 10. Departments with More Than 5 Employees */
+
+        public static string GetDepartmentsWithMoreThan5Employees(SoftUniContext context)
+        {
+            var departments = context
+                .Departments
+                .Where(e => e.Employees.Count > 5)
+                .Select(d => new
+                {
+                    d.Name,
+                    d.Manager,
+                    d.Employees
+                })
+                .OrderBy(d => d.Employees.Count)
+                .ThenBy(d => d.Name)
+                .ToArray();
+
+            StringBuilder sb = new StringBuilder();
+
+            foreach (var department in  departments)
+            {
+                sb.AppendLine($"{department.Name} - {department.Manager.FirstName}");
+                foreach (var employee in department.Employees.OrderBy(e => e.FirstName).ThenBy(e => e.LastName))
+                {
+                    sb.AppendLine($"{employee.FirstName} {employee.LastName} - {employee.JobTitle}");
+                }
+            }
+
+            return sb.ToString();
+        }
+
+
     }
 }
