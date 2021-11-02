@@ -30,7 +30,8 @@ namespace MusicHub.Data.Models
 
         public Album Album { get; set; }
 
-        public int WritterId { get; set; }
+        [Required]
+        public int WriterId { get; set; }
 
         public Writer Writer { get; set; }
 

@@ -8,15 +8,14 @@ namespace MusicHub.Data.Models
 {
     public class SongPerformer
     {
-        [ForeignKey(nameof(Song))]
         public int SongId { get; set; }
 
         [Required]
         public Song Song { get; set; }
 
-        [ForeignKey(nameof(Performer))]
         public int PerformerId { get; set; }
 
-        public ICollection<Performer> PerformerSongs { get; set; } = new HashSet<Performer>();
+        [Required]
+        public Performer Performer { get; set; }
     }
 }
