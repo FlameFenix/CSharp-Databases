@@ -95,7 +95,6 @@
                     SongDuration = x.Duration
 
                 })
-                .ToList()
                 .OrderBy(x => x.SongName)
                 .ThenBy(x => x.WriterName)
                 .ThenBy(x => x.PerformerName)
