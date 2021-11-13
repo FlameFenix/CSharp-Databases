@@ -14,50 +14,51 @@ namespace ProductShop
         {
             var db = new ProductShopContext();
 
-            /* WHEN CREATE DB YOU SHOULD USE string "path" */
+            //db.Database.EnsureDeleted();
 
-            // db.Database.EnsureDeleted();
+            //db.Database.EnsureCreated();
 
-            // db.Database.EnsureCreated();
+            //1.Import Users
 
-            // 2.Import Users
+            //string users = File.ReadAllText(@"../../../Datasets/users.json");
 
-            // string path2 = @"../../../Datasets/users.json";
+            //Console.WriteLine(ImportUsers(db, users));
 
-            // Console.WriteLine(ImportUsers(db, path2));
+            //2.Import Products
 
-            // 3.Import Products
+            //string products = File.ReadAllText(@"../../../Datasets/products.json");
 
-            // string path3 = @"../../../Datasets/products.json";
+            //Console.WriteLine(ImportProducts(db, products));
 
-            // Console.WriteLine(ImportProducts(db, path3));
+            //3.Import Categories
 
-            // 4.Import Categories
+            //string categories = File.ReadAllText(@"../../../Datasets/categories.json");
 
-            // string path4 = @"../../../Datasets/categories.json";
+            //Console.WriteLine(ImportCategories(db, categories));
 
-            // Console.WriteLine(ImportCategories(db, path4));
+            //4. Import Categories and Products
 
-            // 5. Import Categories and Products
+            //string categoryProducts = File.ReadAllText(@"../../../Datasets/categories-products.json");
 
-             //string path5 = @"../../../Datasets/categories-products.json";
+            //Console.WriteLine(ImportCategoryProducts(db, categoryProducts));
 
-             //Console.WriteLine(ImportCategoryProducts(db, path5));
+            // 5. Export Products In Range
+
+            // Console.WriteLine(GetProductsInRange(db));
+
+            // 6. Export Sold Products
+
+            // Console.WriteLine(GetSoldProducts(db));
         }
 
         public static string ImportUsers(ProductShopContext context, string inputJson)
         {
-            
-            // var jsonString = File.ReadAllText(inputJson);
 
             ICollection<User> createdUsers = JsonConvert.DeserializeObject<List<User>>(inputJson);
 
             var users = context.Users;
 
-            foreach (var user in createdUsers)
-            {
-                users.Add(user);
-            }
+            users.AddRange(createdUsers);
 
             context.SaveChanges();
 
@@ -67,16 +68,12 @@ namespace ProductShop
 
         public static string ImportProducts(ProductShopContext context, string inputJson)
         {
-            // string jsonString = File.ReadAllText(inputJson);
 
             ICollection<Product> productsJSON = JsonConvert.DeserializeObject<List<Product>>(inputJson);
 
             var products = context.Products;
 
-            foreach (var product in productsJSON)
-            {
-                products.Add(product);
-            }
+            products.AddRange(productsJSON);
 
             context.SaveChanges();
 
@@ -85,17 +82,12 @@ namespace ProductShop
 
         public static string ImportCategories(ProductShopContext context, string inputJson)
         {
-            // string jsonString = File.ReadAllText(inputJson);
-
             ICollection<Category> categoriesJson = JsonConvert.DeserializeObject<List<Category>>(inputJson)
                 .Where(x => x.Name != null).ToList();
 
             var categories = context.Categories;
 
-            foreach (var category in categoriesJson)
-            {
-                categories.Add(category);
-            }
+            categories.AddRange(categoriesJson);
 
             context.SaveChanges();
 
@@ -104,20 +96,59 @@ namespace ProductShop
 
         public static string ImportCategoryProducts(ProductShopContext context, string inputJson)
         {
-            // string jsonString = File.ReadAllText(inputJson);
 
             ICollection<CategoryProduct> categoryProductsJson = JsonConvert.DeserializeObject<List<CategoryProduct>>(inputJson);
 
             var categoryProducts = context.CategoryProducts;
 
-            foreach (var categoryProduct in categoryProductsJson)
-            {
-                    categoryProducts.Add(categoryProduct);
-            }
+            categoryProducts.AddRange(categoryProductsJson);
 
             context.SaveChanges();
 
             return $"Successfully imported {categoryProductsJson.Count}";
+        }
+
+        public static string GetProductsInRange(ProductShopContext context)
+        {
+            var products = context.Products
+                .Where(x => x.Price >= 500 && x.Price <= 1000)
+                .Select(x => new
+                {
+                    name = x.Name,
+                    price = x.Price,
+                    seller = x.Seller.FirstName + ' ' + x.Seller.LastName,
+                })
+                .OrderBy(x => x.price)
+                .ToList();
+
+            string productsJson = JsonConvert.SerializeObject(products, Formatting.Indented);
+
+            return productsJson;
+        }
+
+        public static string GetSoldProducts(ProductShopContext context)
+        {
+            var soldProducts = context.Users
+                                      .Where(x => x.ProductsSold.Any(y => y.Buyer != null))
+                                      .OrderBy(x => x.LastName)
+                                      .ThenBy(x => x.FirstName)
+                                      .Select(x => new
+                                      {
+                                          firstName = x.FirstName,
+                                          lastName = x.LastName,
+                                          soldProducts = x.ProductsSold.Select(p => new
+                                          {
+                                              name = p.Name,
+                                              price = p.Price,
+                                              buyerFirstName = p.Buyer.FirstName,
+                                              buyerLastName = p.Buyer.LastName
+                                          })
+                                      })
+                                      .ToList();
+
+            string soldProductsJson = JsonConvert.SerializeObject(soldProducts, Formatting.Indented);
+
+            return soldProductsJson;
         }
     }
 }
