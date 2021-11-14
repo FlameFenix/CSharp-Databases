@@ -2,14 +2,22 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using AutoMapper;
 using Newtonsoft.Json;
 using ProductShop.Data;
+using ProductShop.Dtos;
 using ProductShop.Models;
 
 namespace ProductShop
 {
     public class StartUp
     {
+        private static MapperConfiguration configuration = new MapperConfiguration(cfg =>
+        {
+            cfg.AddProfile<ProductShopProfile>();
+        });
+
+        private static IMapper mapper = new Mapper(configuration);
         public static void Main(string[] args)
         {
             var db = new ProductShopContext();
@@ -18,25 +26,25 @@ namespace ProductShop
 
             //db.Database.EnsureCreated();
 
-            //1.Import Users
+            // 1.Import Users
 
             //string users = File.ReadAllText(@"../../../Datasets/users.json");
 
             //Console.WriteLine(ImportUsers(db, users));
 
-            //2.Import Products
+            // 2.Import Products
 
             //string products = File.ReadAllText(@"../../../Datasets/products.json");
 
             //Console.WriteLine(ImportProducts(db, products));
 
-            //3.Import Categories
+            // 3.Import Categories
 
             //string categories = File.ReadAllText(@"../../../Datasets/categories.json");
 
             //Console.WriteLine(ImportCategories(db, categories));
 
-            //4. Import Categories and Products
+            //  4.Import Categories and Products
 
             //string categoryProducts = File.ReadAllText(@"../../../Datasets/categories-products.json");
 
@@ -49,16 +57,22 @@ namespace ProductShop
             // 6. Export Sold Products
 
             // Console.WriteLine(GetSoldProducts(db));
+
+            // 7. Export Users and Products
+
+            // Console.WriteLine(GetCategoriesByProductsCount(db));
         }
 
         public static string ImportUsers(ProductShopContext context, string inputJson)
         {
 
-            ICollection<User> createdUsers = JsonConvert.DeserializeObject<List<User>>(inputJson);
+            ICollection<InputUsersDto> createdUsers = JsonConvert.DeserializeObject<List<InputUsersDto>>(inputJson);
 
             var users = context.Users;
 
-            users.AddRange(createdUsers);
+            var mappedUsers = mapper.Map<ICollection<User>>(createdUsers);
+
+            users.AddRange(mappedUsers);
 
             context.SaveChanges();
 
@@ -149,6 +163,28 @@ namespace ProductShop
             string soldProductsJson = JsonConvert.SerializeObject(soldProducts, Formatting.Indented);
 
             return soldProductsJson;
+        }
+
+        public static string GetCategoriesByProductsCount(ProductShopContext context)
+        {
+            var categories = context.Categories.Select(x => new
+            {
+                category = x.Name,
+                productsCount = x.CategoryProducts.Count(),
+                averagePrice = $"{x.CategoryProducts.Average(y => y.Product.Price):F2}",
+                totalRevenue = $"{x.CategoryProducts.Sum(y => y.Product.Price):F2}"
+            })
+                .OrderByDescending(x => x.productsCount)
+                .ToList();
+
+            var categoriesJson = JsonConvert.SerializeObject(categories, Formatting.Indented);
+
+            return categoriesJson;
+        }
+
+        public static string GetUsersWithProducts(ProductShopContext context)
+        {
+
         }
     }
 }
