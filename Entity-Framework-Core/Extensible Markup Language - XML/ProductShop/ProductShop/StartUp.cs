@@ -17,21 +17,34 @@ namespace ProductShop
         {
             var context = new ProductShopContext();
 
-            context.Database.EnsureDeleted();
+            //context.Database.EnsureDeleted();
 
-            context.Database.EnsureCreated();
+            //context.Database.EnsureCreated();
 
             // 01. Import Users
 
-            string importUsers = File.ReadAllText("../../../Datasets/users.xml");
+            //string importUsers = File.ReadAllText("../../../Datasets/users.xml");
 
-            Console.WriteLine(ImportUsers(context, importUsers));
+            //Console.WriteLine(ImportUsers(context, importUsers));
 
             // 02. Import Products
 
-            string importProducts = File.ReadAllText("../../../Datasets/products.xml");
+            //string importProducts = File.ReadAllText("../../../Datasets/products.xml");
 
-            Console.WriteLine(ImportProducts(context, importProducts));
+            //Console.WriteLine(ImportProducts(context, importProducts));
+
+            // 03. Import Categories
+
+            //string importCategories = File.ReadAllText("../../../Datasets/categories.xml");
+
+            //Console.WriteLine(ImportCategories(context, importCategories));
+
+            // 04. Import CategoryProducts
+
+            //string importCategoryProducts = File.ReadAllText("../../../Datasets/categories-products.xml");
+
+            //Console.WriteLine(ImportCategoryProducts(context, importCategoryProducts));
+
 
         }
 
@@ -95,6 +108,81 @@ namespace ProductShop
             context.SaveChanges();
 
             return $"Successfully imported {context.Products.Count()}";
+        }
+
+        public static string ImportCategories(ProductShopContext context, string inputXml)
+        {
+            XmlRootAttribute xmlRoot = new XmlRootAttribute("Categories");
+
+            XmlSerializer serializer = new XmlSerializer(typeof(ImportCategoriesDto[]), xmlRoot);
+
+            var reader = new StringReader(inputXml);
+
+            var dtos = (ImportCategoriesDto[])serializer.Deserialize(reader);
+
+            var categories = new List<Category>();
+
+            foreach (var category in dtos)
+            {
+                Category currentCategory = new Category();
+
+                if (string.IsNullOrEmpty(category.Name))
+                {
+                    continue;
+                }
+                currentCategory.Name = category.Name;
+
+                categories.Add(currentCategory);
+            }
+
+            context.Categories.AddRange(categories);
+            context.SaveChanges();
+
+            return $"Successfully imported {context.Categories.Count()}";
+        }
+
+        public static string ImportCategoryProducts(ProductShopContext context, string inputXml)
+        {
+            var xmlRoot = new XmlRootAttribute("CategoryProducts");
+
+            var serializer = new XmlSerializer(typeof(ImportCategoryProductsDto[]), xmlRoot);
+
+            StringReader reader = new StringReader(inputXml);
+
+            var dtos = (ImportCategoryProductsDto[]) serializer.Deserialize(reader);
+
+            foreach (var dto in dtos)
+            {
+                CategoryProduct currentCatProd = new CategoryProduct();
+
+                var product = context.Products.FirstOrDefault(x => x.Id == int.Parse(dto.ProductId));
+
+                var category = context.Categories.FirstOrDefault(x => x.Id == int.Parse(dto.CategoryId));
+
+                if (product == null || category == null)
+                {
+                    continue;
+                }
+
+                currentCatProd = new CategoryProduct()
+                {
+                    Category = category,
+                    CategoryId = category.Id,
+                    Product = product,
+                    ProductId = product.Id
+                };
+
+                context.CategoryProducts.Add(currentCatProd);
+            }
+
+            context.SaveChanges();
+
+            return $"Successfully imported {context.CategoryProducts.Count()}";
+        }
+
+        public static string GetProductsInRange(ProductShopContext context)
+        {
+            return "";
         }
     }
 }
