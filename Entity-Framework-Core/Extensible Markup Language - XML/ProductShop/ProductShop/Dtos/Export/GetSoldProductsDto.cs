@@ -1,18 +1,20 @@
-﻿using System;
+﻿using ProductShop.Models;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml.Serialization;
 
-namespace ProductShop.Dtos.Import
+namespace ProductShop.Dtos.Export
 {
     [XmlType("User")]
-    public class ImportUsersDto
+    public class GetSoldProductsDto
     {
         [XmlElement("firstName")]
         public string FirstName { get; set; }
         [XmlElement("lastName")]
         public string LastName { get; set; }
-        [XmlElement("age")]
-        public string Age { get; set; }
+
+        [XmlArray("soldProducts")]
+        public ProductDto[] Products { get; set; }
     }
 }

@@ -8,6 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Xml.Serialization;
 using System.Globalization;
+using ProductShop.Dtos.Export;
+using System.Text;
 
 namespace ProductShop
 {
@@ -21,13 +23,13 @@ namespace ProductShop
 
             //context.Database.EnsureCreated();
 
-            // 01. Import Users
+            // 01.Import Users
 
             //string importUsers = File.ReadAllText("../../../Datasets/users.xml");
 
             //Console.WriteLine(ImportUsers(context, importUsers));
 
-            // 02. Import Products
+            // 02.Import Products
 
             //string importProducts = File.ReadAllText("../../../Datasets/products.xml");
 
@@ -45,14 +47,24 @@ namespace ProductShop
 
             //Console.WriteLine(ImportCategoryProducts(context, importCategoryProducts));
 
+            // 05. Products In Range
 
+            // Console.WriteLine(GetProductsInRange(context));
+
+            // 06. Sold Products
+
+            // Console.WriteLine(GetSoldProducts(context));
+
+            // 07. Categories By Products Count
+
+            // Console.WriteLine(GetCategoriesByProductsCount(context));
+
+            // 08. Users and Products
         }
 
         public static string ImportUsers(ProductShopContext context, string inputXml)
         {
-            XmlRootAttribute xmlRoot = new XmlRootAttribute("Users");
-
-            XmlSerializer xmlSerializer = new XmlSerializer(typeof(ImportUsersDto[]), xmlRoot);
+            XmlSerializer xmlSerializer = GenerateSerializer(typeof(ImportUsersDto[]), "Users");
 
             StringReader reader = new StringReader(inputXml);
 
@@ -80,8 +92,7 @@ namespace ProductShop
 
         public static string ImportProducts(ProductShopContext context, string inputXml)
         {
-            XmlRootAttribute xmlRoot = new XmlRootAttribute("Products");
-            XmlSerializer serializer = new XmlSerializer(typeof(ImportProductsDto[]), xmlRoot);
+            XmlSerializer serializer = GenerateSerializer(typeof(ImportProductsDto[]), "Products");
 
             var reader = new StringReader(inputXml);
 
@@ -97,6 +108,7 @@ namespace ProductShop
                     Price = decimal.Parse(product.Price, CultureInfo.InvariantCulture),
                     SellerId = int.Parse(product.SellerId),
                 };
+
                 if (product.buyerId != null)
                 {
                     currentProduct.BuyerId = int.Parse(product.buyerId);
@@ -112,9 +124,7 @@ namespace ProductShop
 
         public static string ImportCategories(ProductShopContext context, string inputXml)
         {
-            XmlRootAttribute xmlRoot = new XmlRootAttribute("Categories");
-
-            XmlSerializer serializer = new XmlSerializer(typeof(ImportCategoriesDto[]), xmlRoot);
+            XmlSerializer serializer = GenerateSerializer(typeof(ImportCategoriesDto[]), "Categories");
 
             var reader = new StringReader(inputXml);
 
@@ -143,9 +153,7 @@ namespace ProductShop
 
         public static string ImportCategoryProducts(ProductShopContext context, string inputXml)
         {
-            var xmlRoot = new XmlRootAttribute("CategoryProducts");
-
-            var serializer = new XmlSerializer(typeof(ImportCategoryProductsDto[]), xmlRoot);
+            var serializer = GenerateSerializer(typeof(ImportCategoryProductsDto[]), "CategoryProducts");
 
             StringReader reader = new StringReader(inputXml);
 
@@ -182,7 +190,117 @@ namespace ProductShop
 
         public static string GetProductsInRange(ProductShopContext context)
         {
-            return "";
+            XmlSerializer serializer = GenerateSerializer(typeof(ProductsInRangeDto[]), "Products");
+
+            XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces();
+
+            namespaces.Add(String.Empty, String.Empty);
+
+            StringBuilder sb = new StringBuilder();
+
+            StringWriter sw = new StringWriter(sb);
+
+            var dtos = context.Products.
+                Where(x => x.Price >= 500 & x.Price <= 1000)
+                .OrderBy(x => x.Price)
+                .Take(10)
+                .Select(x => new ProductsInRangeDto()
+                {
+                    Name = x.Name,
+                    Price = x.Price.ToString(),
+                    BuyerName = x.Buyer.FirstName + " " + x.Buyer.LastName
+                })
+                .ToArray();
+
+            serializer.Serialize(sw, dtos, namespaces);
+
+            return sb.ToString().Trim();
         }
+
+        public static string GetSoldProducts(ProductShopContext context)
+        {
+
+            XmlSerializer serializer = GenerateSerializer(typeof(GetSoldProductsDto[]), "Users");
+
+            XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces();
+
+            namespaces.Add(String.Empty, String.Empty);
+
+            StringBuilder sb = new StringBuilder();
+
+            StringWriter sw = new StringWriter(sb);
+
+            var dtos = context.Users
+                .Where(x => x.ProductsSold.Any())
+                .OrderBy(x => x.LastName)
+                .ThenBy(x => x.FirstName)
+                .Take(5)
+                .Select(x => new GetSoldProductsDto()
+            {
+                FirstName = x.FirstName,
+                LastName = x.LastName,
+                Products = x.ProductsSold.Select(y => new ProductDto()
+                {
+                    Name=y.Name,
+                    Price=y.Price.ToString(),
+                })
+                .ToArray()
+            })
+                .ToArray();
+
+            serializer.Serialize(sw, dtos, namespaces);
+
+            return sb.ToString().Trim();
+        }
+
+        public static string GetCategoriesByProductsCount(ProductShopContext context)
+        {
+            XmlSerializer serializer = GenerateSerializer(typeof(CategoriesByProductsCountDto[]), "Categories");
+
+            XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces();
+
+            namespaces.Add(string.Empty, string.Empty);
+
+            StringBuilder sb = new StringBuilder();
+
+            StringWriter sw = new StringWriter(sb);
+
+            var dtos = context.Categories
+                .Select(x => new CategoriesByProductsCountDto()
+                {
+                    Name = x.Name,
+                    Count = x.CategoryProducts.Count().ToString(),
+                    averagePrice = x.CategoryProducts.Average(y => y.Product.Price).ToString(),
+                    TotalRevenue = x.CategoryProducts.Sum(y => y.Product.Price).ToString()
+                })
+                .OrderByDescending(x => int.Parse(x.Count))
+                .ThenBy(x => decimal.Parse(x.TotalRevenue))
+                .ToArray();
+
+            serializer.Serialize(sw, dtos, namespaces);
+
+            return sb.ToString().Trim();
+        }
+
+        public static string GetUsersWithProducts(ProductShopContext context)
+        {
+            XmlSerializer serializer = GenerateSerializer(typeof(), "Users");
+
+            XmlSerializerNamespaces namespaces = new XmlSerializerNamespaces();
+
+            namespaces.Add(string.Empty, string.Empty);
+
+            StringBuilder sb = new StringBuilder();
+
+            StringWriter sw = new StringWriter(sb);
+        }
+
+        public static XmlSerializer GenerateSerializer(Type type, string root)
+        {
+            XmlRootAttribute xmlRoot = new XmlRootAttribute(root);
+            XmlSerializer serializer = new XmlSerializer(type, xmlRoot);
+            return serializer;
+        }
+
     }
 }

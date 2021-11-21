@@ -16,7 +16,6 @@ namespace ProductShop.Dtos.Import
         public string SellerId { get; set; }
 
         [XmlElement("buyerId")]
-        [XmlIgnore]
         public string buyerId { get; set; }
 
         //<name>Care One Hemorrhoidal</name>
