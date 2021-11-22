@@ -58,7 +58,11 @@ namespace CarDealer
 
             // 16. Local Suppliers
 
-            Console.WriteLine(GetLocalSuppliers(context));
+            // Console.WriteLine(GetLocalSuppliers(context));
+
+            // 17. Cars with Their List of Parts
+
+            // Console.WriteLine(GetCarsWithTheirListOfParts(context));
         }
 
         public static string ImportSuppliers(CarDealerContext context, string inputXml)
@@ -336,6 +340,42 @@ namespace CarDealer
             serializer.Serialize(sw, dtos, namespaces);
 
             return sb.ToString().Trim();
+        }
+
+        public static string GetCarsWithTheirListOfParts(CarDealerContext context)
+        {
+            var serializer = GenerateSerializer(typeof(CarsWithTheirListOfPartsDto[]), "cars");
+
+            var namespaces = new XmlSerializerNamespaces();
+
+            namespaces.Add(string.Empty, string.Empty);
+
+            var sb = new StringBuilder();
+
+            var sw = new StringWriter(sb);
+
+            var dtos = context.Cars
+                .OrderByDescending(x => x.TravelledDistance)
+                .ThenBy(x => x.Model)
+                .Select(x => new CarsWithTheirListOfPartsDto()
+            {
+                Make = x.Make,
+                Model = x.Model,
+                TravelledDistance = x.TravelledDistance.ToString(),
+                Parts = x.PartCars
+                .OrderByDescending(x => x.Part.Price)
+                .Select(y => new PartsDto()
+                {
+                    Name = y.Part.Name,
+                    Price = y.Part.Price.ToString()
+                }).ToArray()
+            })
+                .Take(5)
+                .ToArray();
+
+            serializer.Serialize(sw, dtos, namespaces);
+
+            return sb.ToString();
         }
 
         public static XmlSerializer GenerateSerializer(Type type, string root)
