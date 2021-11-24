@@ -63,6 +63,14 @@ namespace CarDealer
             // 17. Cars with Their List of Parts
 
             // Console.WriteLine(GetCarsWithTheirListOfParts(context));
+
+            // 18. Total Sales by Customer
+
+            // Console.WriteLine(GetTotalSalesByCustomer(context));
+
+            // 19. Sales with Applied Discount
+
+            // Console.WriteLine(GetSalesWithAppliedDiscount(context));
         }
 
         public static string ImportSuppliers(CarDealerContext context, string inputXml)
@@ -378,6 +386,69 @@ namespace CarDealer
             return sb.ToString();
         }
 
+        public static string GetTotalSalesByCustomer(CarDealerContext context)
+        {
+            var serializer = GenerateSerializer(typeof(CustomerByTotalSalesDto[]), "customers");
+
+            var namespaces = new XmlSerializerNamespaces();
+
+            namespaces.Add(string.Empty, string.Empty);
+
+            var sb = new StringBuilder();
+
+            var sw = new StringWriter(sb);
+
+            var dtos = context.Customers
+                .Where(x => x.Sales.Any())
+                .Select(x => new CustomerByTotalSalesDto()
+                {
+                    FullName = x.Name,
+                    SalesCount = x.Sales.Count().ToString(),
+                    SpentMoney = x.Sales.SelectMany(p => p.Car.PartCars.Select(pr => pr.Part.Price)).Sum()
+                })
+                .OrderByDescending(x => x.SpentMoney)
+                .ToArray();
+                
+            
+            serializer.Serialize(sw, dtos, namespaces);
+
+            return sb.ToString().Trim();
+        }
+
+        public static string GetSalesWithAppliedDiscount(CarDealerContext context)
+        {
+            var serializer = GenerateSerializer(typeof(SaleWithAppliedDiscountDto[]), "sales");
+
+            var namespaces = new XmlSerializerNamespaces();
+
+            namespaces.Add(string.Empty, string.Empty);
+
+            var sb = new StringBuilder();
+
+            var sw = new StringWriter(sb);
+
+            var dtos = context.Sales
+                .Select(x => new SaleWithAppliedDiscountDto()
+                {
+
+                    Car = new CarDto()
+                    {
+                        Make = x.Car.Make,
+                        Model = x.Car.Model,
+                        TravelledDistance = x.Car.TravelledDistance.ToString()
+                    },
+                    CustomerName = x.Customer.Name,
+                    Discount = x.Discount.ToString(),
+                    Price = x.Car.PartCars.Sum(p => p.Part.Price).ToString(),
+                    PriceWithDiscount = ((x.Car.PartCars.Sum(p => p.Part.Price) - (x.Car.PartCars.Sum(p => p.Part.Price) * x.Discount / 100))).ToString()
+                })
+                .ToArray();
+
+            serializer.Serialize(sw, dtos, namespaces);
+
+            return sb.ToString().Trim();
+
+        }
         public static XmlSerializer GenerateSerializer(Type type, string root)
         {
             XmlRootAttribute xmlRoot = new XmlRootAttribute(root);
